@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html ng-app="app">
+<head>
+    <title></title>
+    <script type="text/javascript" src="angular-1.3.2.js"></script>
+
+</head>
+<body ng-controller="testCtrl as vm">
+    <input type="text"  ng-model="vm.desc" ng-change="vm.changeFuc()">
+    <input type="text" id="testNode" >
+    <h3>title:{{vm.title}}</h3>
+    <h3>desc:{{vm.desc}}</h3>
+    <button ng-click="vm.clickEvent()">click</button>
+    <hr>
+    <ul>
+        <li ng-repeat="user in vm.users"><strong>{{user.city}}</strong> : <span>{{user.name}}</span> <span ng-click="vm.deleteOne(user.name)" style="color:red;">delete</span></li>
+    </ul>
+    <form ng-submit="vm.submitName()">
+        <select ng-model="vm.mycity" ng-options="city.name as city.name group by city.group for city in vm.Cities"></select>
+        <input type="text" name="username" ng-model="vm.userName">
+        <button type="submit">提交</button>
+    </form>
+</body>
+</html>
+<script type="text/javascript">
+    function serializeData(data){
+        var query = '', name, value;
+        if (data instanceof Object) {
+            for(key in data) {
+                name = key;
+                value = data[key];
+                query += encodeURIComponent(name) + '=' + encodeURIComponent(value) + '&';
+            }
+            return query;
+        } else {
+            return data;
+        }
+    }
+    var mod = angular.module('app',[]);
+    mod.controller("testCtrl",['$scope', '$http',function($scope,$http){
+        let vm = this;
+        vm.title = "";
+        vm.desc = "";
+        vm.mycity='北京';
+        vm.users = [];
+        vm.Cities = [{ id: 1, name: '北京', group: '中国' }, { id: 2, name: '上海', group: '中国' }, { id: 3, name: '广州', group: '中国' }];
+        vm.changeFuc = function(){
+            console.log(vm.title);
+        }
+        vm.clickEvent = function(){
+            console.log(vm.title);
+        }
+
+        function getusernames(){
+            $http({
+                method:'get',
+                xsrfHeaderName:"token",
+                url:"http://localhost:6500/users"
+            }).success(function(result){
+                console.log(result);
+                if(result.status){
+                    vm.users = result.data;
+                }
+            })
+        }
+        vm.getNames = function(){
+            getusernames();
+        }
+        vm.getNames();
+
+        vm.deleteOne = function(name){
+            if(name){
+                $http({
+                    method:'delete',
+                    url:"http://localhost:6500/user/"+name,
+                }).success(function(result){
+                    console.log(result);
+                    getusernames();
+                })
+            }
+        }
+
+        vm.submitName = function(){
+            var data = {name:vm.userName,city:vm.mycity};
+             $http({
+                method:'post',
+                url:"http://localhost:6500/addUser",
+               // xsrfHeaderName:"token",
+                //headers: { "Content-Type": "application/json" },
+                // data:{
+                //     name:vm.userName
+                // },
+                transformRequest:serializeData,
+                headers: { "Content-Type": "application/x-www-form-urlencoded",token:"123"},
+                data:data
+            }).success(function(result){
+                console.log(result);
+                getusernames();
+            })
+        }
+        document.querySelector('#testNode').oninput = function(){
+            let zhi = this.value;
+             $scope.$apply(function(){
+                vm.title = zhi;
+            });
+        }
+    }]);
+</script>
